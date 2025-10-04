@@ -5,8 +5,8 @@
 
 const CONFIG = {
     // 🚨 UPDATE THESE WITH YOUR SUPABASE VALUES (Step 8)
-    API_BASE_URL: 'https://YOUR_PROJECT_ID.supabase.co/rest/v1',
-    SUPABASE_KEY: 'YOUR_ANON_KEY_HERE',
+    API_BASE_URL: 'https://glhrqyzodmuddjigwyyq.supabase.co',
+    SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsaHJxeXpvZG11ZGRqaWd3eXlxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTU3ODAyNywiZXhwIjoyMDc1MTU0MDI3fQ.Y91qLXd_dA457jBRn6Mxxc2I3DetQErcyctFGjP7m_w',
     UPDATE_INTERVAL: 30000 // 30 seconds
 };
 
@@ -430,3 +430,4 @@ updateConnectionStatus('connecting');
 
 console.log('🐝 BeeWatch Production Dashboard Script Loaded');
 console.log('📊 REAL DATA ONLY - No simulations, no demo data');
+
