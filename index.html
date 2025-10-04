@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeeWatch - Production Monitoring</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐝</text></svg>">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="bee-icon">🐝</span>
+                <h1>BeeWatch</h1>
+                <span class="status">PRODUCTION</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#" class="nav-link active" data-section="dashboard">Dashboard</a></li>
+                <li><a href="#" class="nav-link" data-section="sensors">Sensors</a></li>
+                <li><a href="#" class="nav-link" data-section="detections">Detections</a></li>
+                <li><a href="#" class="nav-link" data-section="export">Export</a></li>
+            </ul>
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Loading...</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section id="dashboard" class="section active">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Production Monitoring Dashboard</h2>
+                    <div class="last-update">Last updated: <span id="lastUpdate">--:--</span></div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon">📡</div>
+                        <div class="metric-content">
+                            <h3>Active Sensors</h3>
+                            <div class="metric-value" id="activeSensors">--</div>
+                            <div class="metric-change">Total: <span id="totalSensors">--</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon">🐝</div>
+                        <div class="metric-content">
+                            <h3>Bee Detections</h3>
+                            <div class="metric-value" id="totalDetections">--</div>
+                            <div class="metric-change">Real detections only</div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon">🎯</div>
+                        <div class="metric-content">
+                            <h3>Avg Confidence</h3>
+                            <div class="metric-value" id="avgConfidence">--%</div>
+                            <div class="metric-change">ML model results</div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon">🌡️</div>
+                        <div class="metric-content">
+                            <h3>Avg Temperature</h3>
+                            <div class="metric-value" id="avgTemp">--°C</div>
+                            <div class="metric-change">Live sensors</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-content">
+                    <div class="activity-section">
+                        <h3>Recent Bee Detections</h3>
+                        <div id="recentActivity" class="activity-list">
+                            <div class="loading">No data yet - Deploy sensors to start monitoring</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="sensors" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Production Sensor Network</h2>
+                </div>
+                <div id="sensorsGrid" class="sensors-grid">
+                    <div class="loading">No sensors registered - Deploy ESP32 sensors to start</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="detections" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Real Detection History</h2>
+                </div>
+                <div class="detections-container">
+                    <table class="detections-table" id="detectionsTable">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Sensor</th>
+                                <th>Confidence</th>
+                                <th>Temperature</th>
+                                <th>Humidity</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detectionsBody">
+                            <tr><td colspan="5" class="loading">No detections yet - Deploy ML model for bee detection</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="export" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Production Data Export</h2>
+                </div>
+                <div class="export-form">
+                    <div class="form-group">
+                        <label>Export Format:</label>
+                        <select id="exportFormat">
+                            <option value="csv">CSV (Excel compatible)</option>
+                            <option value="json">JSON (Raw data)</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="exportData()">📥 Export Real Data</button>
+                    <div id="exportStatus" class="export-status"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
