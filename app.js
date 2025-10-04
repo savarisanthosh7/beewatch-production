@@ -5,7 +5,7 @@
 
 const CONFIG = {
     // 🚨 UPDATE THESE WITH YOUR SUPABASE VALUES (Step 8)
-    API_BASE_URL: 'https://glhrqyzodmuddjigwyyq.supabase.co',
+    API_BASE_URL: 'https://glhrqyzodmuddjigwyyq.supabase.co/rest/v1',
     SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsaHJxeXpvZG11ZGRqaWd3eXlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1NzgwMjcsImV4cCI6MjA3NTE1NDAyN30.UnCcfvU0d_9yqa0Ef8M29K4fXEYffe3ggTUrBt73zTc',
     UPDATE_INTERVAL: 30000 // 30 seconds
 };
@@ -430,3 +430,4 @@ updateConnectionStatus('connecting');
 
 console.log('🌸 Pollination Monitor Production Dashboard Script Loaded');
 console.log('📊 REAL DATA ONLY - No simulations, no demo data');
+
