@@ -431,3 +431,4 @@ updateConnectionStatus('connecting');
 console.log('🌸 Pollination Monitor Production Dashboard Script Loaded');
 console.log('📊 REAL DATA ONLY - No simulations, no demo data');
 
+
