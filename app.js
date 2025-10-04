@@ -1,12 +1,12 @@
 /**
- * BeeWatch PRODUCTION Dashboard - REAL DATA ONLY
+ * Pollination Monitor PRODUCTION Dashboard - REAL DATA ONLY
  * NO demo data, NO simulations - only actual sensor readings
  */
 
 const CONFIG = {
     // 🚨 UPDATE THESE WITH YOUR SUPABASE VALUES (Step 8)
     API_BASE_URL: 'https://glhrqyzodmuddjigwyyq.supabase.co',
-    SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsaHJxeXpvZG11ZGRqaWd3eXlxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTU3ODAyNywiZXhwIjoyMDc1MTU0MDI3fQ.Y91qLXd_dA457jBRn6Mxxc2I3DetQErcyctFGjP7m_w',
+    SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsaHJxeXpvZG11ZGRqaWd3eXlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1NzgwMjcsImV4cCI6MjA3NTE1NDAyN30.UnCcfvU0d_9yqa0Ef8M29K4fXEYffe3ggTUrBt73zTc',
     UPDATE_INTERVAL: 30000 // 30 seconds
 };
 
@@ -15,7 +15,7 @@ let updateInterval = null;
 let connectionStatus = 'connecting';
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🐝 BeeWatch PRODUCTION Dashboard Starting...');
+    console.log('🌸 Pollination Monitor PRODUCTION Dashboard Starting...');
     console.log('📊 REAL DATA ONLY - No demo mode');
     initializeNavigation();
     loadInitialData();
@@ -186,7 +186,7 @@ function updateRecentActivity(detections) {
     if (!detections || detections.length === 0) {
         container.innerHTML = `
             <div class="loading">
-                📊 No bee detections yet<br>
+                📊 No pollinator detections yet<br>
                 <small>Deploy your sensors with ML model to start monitoring</small>
             </div>
         `;
@@ -203,7 +203,7 @@ function updateRecentActivity(detections) {
         return `
             <div class="activity-item">
                 <div class="activity-info">
-                    <div class="activity-title">🐝 Real bee detected at ${sensorName}</div>
+                    <div class="activity-title">🐝 Pollinator detected at ${sensorName}</div>
                     <div class="activity-details">
                         ${time} • Temp: ${detection.temperature?.toFixed(1) || 'N/A'}°C • 
                         Humidity: ${detection.humidity?.toFixed(1) || 'N/A'}%
@@ -313,7 +313,7 @@ function updateDetectionsTable(detections) {
     const tbody = document.getElementById('detectionsBody');
     
     if (!detections || detections.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="loading">No real detections yet - Deploy ML model for bee detection</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="loading">No real detections yet - Deploy ML model for pollinator detection</td></tr>';
         return;
     }
     
@@ -408,12 +408,12 @@ function exportCSV(data) {
         ].join(','))
     ].join('\n');
     
-    downloadFile(csvContent, `beewatch_production_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+    downloadFile(csvContent, `pollination_monitor_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
 }
 
 function exportJSON(data) {
     const jsonContent = JSON.stringify(data, null, 2);
-    downloadFile(jsonContent, `beewatch_production_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+    downloadFile(jsonContent, `pollination_monitor_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
 }
 
 function downloadFile(content, filename, mimeType) {
@@ -428,6 +428,5 @@ function downloadFile(content, filename, mimeType) {
 
 updateConnectionStatus('connecting');
 
-console.log('🐝 BeeWatch Production Dashboard Script Loaded');
+console.log('🌸 Pollination Monitor Production Dashboard Script Loaded');
 console.log('📊 REAL DATA ONLY - No simulations, no demo data');
-
