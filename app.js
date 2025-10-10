@@ -1,26 +1,25 @@
 /**
- * Pollination Monitor PRODUCTION Dashboard - REAL DATA ONLY
- * NO demo data, NO simulations - only actual sensor readings
+ * Pollination Monitor - ENHANCED SENSOR MONITORING
+ * Real-time sensor status and offline detection
  */
 
 const CONFIG = {
-    // 🚨 UPDATE THESE WITH YOUR SUPABASE VALUES (Step 8)
     API_BASE_URL: 'https://glhrqyzodmuddjigwyyq.supabase.co/rest/v1',
     SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsaHJxeXpvZG11ZGRqaWd3eXlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1NzgwMjcsImV4cCI6MjA3NTE1NDAyN30.UnCcfvU0d_9yqa0Ef8M29K4fXEYffe3ggTUrBt73zTc',
-    UPDATE_INTERVAL: 30000 // 30 seconds
+    UPDATE_INTERVAL: 30000,
+    SENSOR_TIMEOUT: 300000  // 5 minutes - sensor offline if no updates
 };
 
 let currentSection = 'dashboard';
 let updateInterval = null;
 let connectionStatus = 'connecting';
+let lastSensorUpdate = {};
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🌸 Pollination Monitor PRODUCTION Dashboard Starting...');
-    console.log('📊 REAL DATA ONLY - No demo mode');
+    console.log('🌸 Pollination Monitor with Enhanced Sensor Monitoring');
     initializeNavigation();
     loadInitialData();
     startAutoUpdate();
-    console.log('✅ Production dashboard initialized');
 });
 
 function initializeNavigation() {
@@ -56,7 +55,7 @@ function showSection(sectionName) {
 async function apiCall(endpoint, options = {}) {
     try {
         const url = CONFIG.API_BASE_URL + '/' + endpoint;
-        console.log(`🌐 Production API Call: ${endpoint}`);
+        console.log(`🌐 API Call: ${endpoint}`);
         
         const headers = {
             'Content-Type': 'application/json',
@@ -79,10 +78,8 @@ async function apiCall(endpoint, options = {}) {
         return { data, total: data.length };
         
     } catch (error) {
-        console.error(`❌ Production API Error (${endpoint}):`, error);
+        console.error(`❌ API Error (${endpoint}):`, error);
         updateConnectionStatus('error');
-        
-        // Return EMPTY data instead of demo data
         return { data: [], total: 0 };
     }
 }
@@ -124,11 +121,11 @@ async function loadInitialData() {
 
 async function loadDashboardData() {
     try {
-        // Load REAL sensors only
+        // Load REAL sensors with enhanced status checking
         const sensorsResponse = await apiCall('sensors');
         const sensors = sensorsResponse.data || [];
         
-        // Load REAL detections only
+        // Load REAL detections
         const detectionsResponse = await apiCall('detections?order=timestamp.desc&limit=10');
         const detections = detectionsResponse.data || [];
         
@@ -137,32 +134,37 @@ async function loadDashboardData() {
             detections: detections.length 
         });
         
-        // Calculate metrics from REAL data only
-        const activeSensors = sensors.filter(s => s.status === 'active').length;
+        // ✅ ENHANCED: Check sensor online/offline status
+        const sensorsWithStatus = checkSensorStatus(sensors);
+        const activeSensors = sensorsWithStatus.filter(s => s.realTimeStatus === 'online').length;
         const totalDetections = detections.length;
+        
+        // Calculate metrics only from ONLINE sensors
+        const onlineSensors = sensorsWithStatus.filter(s => s.realTimeStatus === 'online');
         
         const avgConfidence = detections.length > 0 
             ? detections.reduce((sum, d) => sum + (d.confidence || 0), 0) / detections.length
             : 0;
             
-        const avgTemp = sensors.length > 0
-            ? sensors.reduce((sum, s) => sum + (s.temperature || 0), 0) / sensors.length
+        const avgTemp = onlineSensors.length > 0
+            ? onlineSensors.reduce((sum, s) => sum + (s.temperature || 0), 0) / onlineSensors.length
             : 0;
         
         const metrics = {
             total_sensors: sensors.length,
             active_sensors: activeSensors,
+            offline_sensors: sensors.length - activeSensors,
             total_detections: totalDetections,
             avg_confidence: avgConfidence,
             avg_temperature: avgTemp
         };
         
-        // Update UI with REAL data
+        // Update UI with REAL data + status
         updateDashboardMetrics(metrics);
         updateRecentActivity(detections);
-        updateSensorsDisplay(sensors);
+        updateSensorsDisplay(sensorsWithStatus);
         
-        return { metrics, detections, sensors };
+        return { metrics, detections, sensors: sensorsWithStatus };
     } catch (error) {
         console.error('Failed to load production dashboard data:', error);
         updateConnectionStatus('error');
@@ -170,14 +172,54 @@ async function loadDashboardData() {
     }
 }
 
+// ✅ NEW FUNCTION: Check if sensors are online/offline
+function checkSensorStatus(sensors) {
+    const currentTime = new Date();
+    
+    return sensors.map(sensor => {
+        const lastUpdate = new Date(sensor.last_update);
+        const timeDifference = currentTime - lastUpdate;
+        
+        // ⚠️ CRITICAL: Sensor offline if no update in 5 minutes
+        if (timeDifference > CONFIG.SENSOR_TIMEOUT) {
+            sensor.realTimeStatus = 'offline';
+            sensor.offlineTime = Math.floor(timeDifference / 60000); // minutes offline
+        } else if (timeDifference > 120000) { // 2 minutes
+            sensor.realTimeStatus = 'warning';
+        } else {
+            sensor.realTimeStatus = 'online';
+        }
+        
+        sensor.lastSeenMinutes = Math.floor(timeDifference / 60000);
+        
+        console.log(`📡 Sensor ${sensor.id}: ${sensor.realTimeStatus} (last seen ${sensor.lastSeenMinutes} min ago)`);
+        
+        return sensor;
+    });
+}
+
 function updateDashboardMetrics(metrics) {
     document.getElementById('activeSensors').textContent = metrics.active_sensors || 0;
     document.getElementById('totalSensors').textContent = metrics.total_sensors || 0;
     document.getElementById('totalDetections').textContent = metrics.total_detections || 0;
-    document.getElementById('avgConfidence').textContent = 
-        metrics.avg_confidence ? `${(metrics.avg_confidence * 100).toFixed(1)}%` : '0%';
-    document.getElementById('avgTemp').textContent = 
-        metrics.avg_temperature ? `${metrics.avg_temperature.toFixed(1)}°C` : '0°C';
+    
+    // ✅ ENHANCED: Show temperature only from online sensors
+    if (metrics.active_sensors > 0) {
+        document.getElementById('avgConfidence').textContent = 
+            metrics.avg_confidence ? `${(metrics.avg_confidence * 100).toFixed(1)}%` : '0%';
+        document.getElementById('avgTemp').textContent = 
+            metrics.avg_temperature ? `${metrics.avg_temperature.toFixed(1)}°C` : 'N/A';
+    } else {
+        document.getElementById('avgConfidence').textContent = 'N/A';
+        document.getElementById('avgTemp').textContent = 'N/A';
+    }
+    
+    // ✅ NEW: Show offline sensor count if any
+    if (metrics.offline_sensors > 0) {
+        const activeElement = document.getElementById('activeSensors').parentElement;
+        activeElement.querySelector('.metric-change').innerHTML = 
+            `Total: ${metrics.total_sensors} | <span style="color: #f44336;">Offline: ${metrics.offline_sensors}</span>`;
+    }
 }
 
 function updateRecentActivity(detections) {
@@ -193,7 +235,6 @@ function updateRecentActivity(detections) {
         return;
     }
     
-    // Show REAL detections when they exist
     container.innerHTML = detections.slice(0, 5).map(detection => {
         const sensorName = detection.sensors?.name || `Sensor ${detection.sensor_id}`;
         const confidence = detection.confidence * 100;
@@ -217,6 +258,7 @@ function updateRecentActivity(detections) {
     }).join('');
 }
 
+// ✅ ENHANCED: Show real-time sensor status with offline indicators
 function updateSensorsDisplay(sensors) {
     const container = document.getElementById('sensorsGrid');
     
@@ -230,42 +272,65 @@ function updateSensorsDisplay(sensors) {
         return;
     }
     
-    // Show REAL sensors when they exist
-    container.innerHTML = sensors.map(sensor => `
-        <div class="sensor-card ${sensor.status}">
-            <div class="sensor-header">
-                <div class="sensor-name">${sensor.name}</div>
-                <div class="sensor-status ${sensor.status}">${sensor.status}</div>
+    container.innerHTML = sensors.map(sensor => {
+        // ✅ ENHANCED: Different styling based on real-time status
+        let statusClass = sensor.realTimeStatus;
+        let statusText = sensor.realTimeStatus.toUpperCase();
+        let statusIcon = '';
+        
+        if (sensor.realTimeStatus === 'offline') {
+            statusText = `OFFLINE (${sensor.offlineTime}min ago)`;
+            statusIcon = '❌';
+        } else if (sensor.realTimeStatus === 'warning') {
+            statusText = `SLOW (${sensor.lastSeenMinutes}min ago)`;
+            statusIcon = '⚠️';
+        } else {
+            statusText = `ONLINE (${sensor.lastSeenMinutes}min ago)`;
+            statusIcon = '✅';
+        }
+        
+        return `
+            <div class="sensor-card ${statusClass}">
+                <div class="sensor-header">
+                    <div class="sensor-name">${sensor.name}</div>
+                    <div class="sensor-status ${statusClass}">${statusIcon} ${statusText}</div>
+                </div>
+                <div class="sensor-metrics">
+                    <div class="sensor-metric">
+                        <div class="metric-label">Battery</div>
+                        <div class="metric-number ${sensor.realTimeStatus === 'offline' ? 'offline-data' : ''}">${sensor.battery_level}%</div>
+                    </div>
+                    <div class="sensor-metric">
+                        <div class="metric-label">Detections</div>
+                        <div class="metric-number">${sensor.bee_detections || 0}</div>
+                    </div>
+                    <div class="sensor-metric">
+                        <div class="metric-label">Temperature</div>
+                        <div class="metric-number ${sensor.realTimeStatus === 'offline' ? 'offline-data' : ''}">
+                            ${sensor.temperature?.toFixed(1) || '--'}°C
+                        </div>
+                    </div>
+                    <div class="sensor-metric">
+                        <div class="metric-label">Humidity</div>
+                        <div class="metric-number ${sensor.realTimeStatus === 'offline' ? 'offline-data' : ''}">
+                            ${sensor.humidity?.toFixed(1) || '--'}%
+                        </div>
+                    </div>
+                </div>
+                ${sensor.realTimeStatus === 'offline' ? 
+                    '<div class="offline-warning">⚠️ Sensor disconnected - showing last known values</div>' : 
+                    '<div class="online-indicator">📡 Live data</div>'}
             </div>
-            <div class="sensor-metrics">
-                <div class="sensor-metric">
-                    <div class="metric-label">Battery</div>
-                    <div class="metric-number">${sensor.battery_level}%</div>
-                </div>
-                <div class="sensor-metric">
-                    <div class="metric-label">Real Detections</div>
-                    <div class="metric-number">${sensor.bee_detections || 0}</div>
-                </div>
-                <div class="sensor-metric">
-                    <div class="metric-label">Temperature</div>
-                    <div class="metric-number">${sensor.temperature?.toFixed(1) || '--'}°C</div>
-                </div>
-                <div class="sensor-metric">
-                    <div class="metric-label">Humidity</div>
-                    <div class="metric-number">${sensor.humidity?.toFixed(1) || '--'}%</div>
-                </div>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function showEmptyDashboard() {
-    // Show empty state when no connection and no data
     document.getElementById('activeSensors').textContent = 0;
     document.getElementById('totalSensors').textContent = 0;
     document.getElementById('totalDetections').textContent = 0;
-    document.getElementById('avgConfidence').textContent = '0%';
-    document.getElementById('avgTemp').textContent = '0°C';
+    document.getElementById('avgConfidence').textContent = 'N/A';
+    document.getElementById('avgTemp').textContent = 'N/A';
     
     updateRecentActivity([]);
     updateSensorsDisplay([]);
@@ -292,7 +357,8 @@ async function loadSectionData(sectionName) {
 async function loadSensors() {
     try {
         const response = await apiCall('sensors');
-        updateSensorsDisplay(response.data);
+        const sensorsWithStatus = checkSensorStatus(response.data);
+        updateSensorsDisplay(sensorsWithStatus);
         return response;
     } catch (error) {
         console.error('Failed to load production sensors:', error);
@@ -344,13 +410,14 @@ function startAutoUpdate() {
             try {
                 await loadSectionData(currentSection);
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+                console.log('🔄 Auto-update completed with sensor status check');
             } catch (error) {
                 console.error('Auto-update failed:', error);
             }
         }
     }, CONFIG.UPDATE_INTERVAL);
     
-    console.log(`🔄 Production auto-update started (${CONFIG.UPDATE_INTERVAL/1000}s interval)`);
+    console.log(`🔄 Enhanced auto-update started (${CONFIG.UPDATE_INTERVAL/1000}s interval)`);
 }
 
 async function exportData() {
@@ -428,7 +495,6 @@ function downloadFile(content, filename, mimeType) {
 
 updateConnectionStatus('connecting');
 
-console.log('🌸 Pollination Monitor Production Dashboard Script Loaded');
-console.log('📊 REAL DATA ONLY - No simulations, no demo data');
-
-
+console.log('🌸 Pollination Monitor - Enhanced Sensor Monitoring Loaded');
+console.log('📊 Real-time sensor status detection active');
+console.log('⚠️ Offline detection: >5 minutes without updates');
