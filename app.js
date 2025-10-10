@@ -1,54 +1,115 @@
 /**
- * Pollination Monitor - ENHANCED SENSOR MONITORING
- * Real-time sensor status and offline detection
+ * Pollination Monitor PRODUCTION Dashboard - FIXED VERSION
+ * REAL DATA ONLY with improved error handling
  */
 
 const CONFIG = {
+    // 🚨 UPDATE THESE WITH YOUR EXACT VALUES
     API_BASE_URL: 'https://glhrqyzodmuddjigwyyq.supabase.co/rest/v1',
     SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsaHJxeXpvZG11ZGRqaWd3eXlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1NzgwMjcsImV4cCI6MjA3NTE1NDAyN30.UnCcfvU0d_9yqa0Ef8M29K4fXEYffe3ggTUrBt73zTc',
-    UPDATE_INTERVAL: 30000,
-    SENSOR_TIMEOUT: 300000  // 5 minutes - sensor offline if no updates
+    UPDATE_INTERVAL: 30000
 };
 
 let currentSection = 'dashboard';
 let updateInterval = null;
 let connectionStatus = 'connecting';
-let lastSensorUpdate = {};
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🌸 Pollination Monitor with Enhanced Sensor Monitoring');
+    console.log('🌸 Pollination Monitor PRODUCTION - FIXED VERSION');
+    console.log('🔧 Testing API connection...');
+    
+    // Test connection immediately
+    testAPIConnection();
+    
+    // Initialize navigation
     initializeNavigation();
-    loadInitialData();
-    startAutoUpdate();
+    
+    // Load initial data
+    setTimeout(() => {
+        loadInitialData();
+        startAutoUpdate();
+    }, 2000);
+    
+    console.log('✅ Dashboard initialized with connection test');
 });
 
+async function testAPIConnection() {
+    console.log('🔍 Testing API connection...');
+    console.log('📡 API URL:', CONFIG.API_BASE_URL);
+    console.log('🔑 API Key length:', CONFIG.SUPABASE_KEY.length);
+    
+    try {
+        const response = await fetch(CONFIG.API_BASE_URL + '/sensors', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': CONFIG.SUPABASE_KEY,
+                'Authorization': `Bearer ${CONFIG.SUPABASE_KEY}`
+            }
+        });
+        
+        console.log('📊 Response status:', response.status);
+        
+        if (response.ok) {
+            console.log('✅ API connection successful!');
+            updateConnectionStatus('connected');
+        } else {
+            console.log('❌ API response error:', response.status, response.statusText);
+            updateConnectionStatus('error');
+        }
+    } catch (error) {
+        console.log('❌ API connection failed:', error.message);
+        updateConnectionStatus('error');
+    }
+}
+
 function initializeNavigation() {
+    console.log('🔧 Initializing navigation...');
+    
     const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
+    console.log('📋 Found navigation links:', navLinks.length);
+    
+    navLinks.forEach((link, index) => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const section = e.target.getAttribute('data-section');
+            console.log(`🔗 Navigation clicked: ${section}`);
             showSection(section);
         });
+        console.log(`✅ Navigation ${index + 1} initialized`);
     });
 }
 
 function showSection(sectionName) {
+    console.log(`📄 Switching to section: ${sectionName}`);
+    
+    // Hide all sections
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
     });
     
+    // Show selected section
     const targetSection = document.getElementById(sectionName);
     if (targetSection) {
         targetSection.classList.add('active');
         currentSection = sectionName;
         
+        // Update navigation
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('active');
         });
-        document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
         
+        const activeLink = document.querySelector(`[data-section="${sectionName}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+        
+        console.log(`✅ Section ${sectionName} now active`);
+        
+        // Load section-specific data
         loadSectionData(sectionName);
+    } else {
+        console.log(`❌ Section ${sectionName} not found`);
     }
 }
 
@@ -65,9 +126,12 @@ async function apiCall(endpoint, options = {}) {
         };
         
         const response = await fetch(url, {
+            method: options.method || 'GET',
             headers,
-            ...options
+            body: options.body ? JSON.stringify(options.body) : undefined
         });
+        
+        console.log(`📊 API Response (${endpoint}):`, response.status);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -75,10 +139,11 @@ async function apiCall(endpoint, options = {}) {
         
         const data = await response.json();
         updateConnectionStatus('connected');
+        console.log(`✅ API Success (${endpoint}):`, data.length || 'N/A', 'records');
         return { data, total: data.length };
         
     } catch (error) {
-        console.error(`❌ API Error (${endpoint}):`, error);
+        console.error(`❌ API Error (${endpoint}):`, error.message);
         updateConnectionStatus('error');
         return { data: [], total: 0 };
     }
@@ -87,8 +152,19 @@ async function apiCall(endpoint, options = {}) {
 function updateConnectionStatus(status) {
     connectionStatus = status;
     const statusElement = document.getElementById('connectionStatus');
+    
+    if (!statusElement) {
+        console.log('❌ Connection status element not found');
+        return;
+    }
+    
     const statusDot = statusElement.querySelector('.status-dot');
     const statusText = statusElement.querySelector('.status-text');
+    
+    if (!statusDot || !statusText) {
+        console.log('❌ Connection status elements not found');
+        return;
+    }
     
     statusDot.className = 'status-dot';
     
@@ -96,134 +172,108 @@ function updateConnectionStatus(status) {
         case 'connected':
             statusDot.classList.add('connected');
             statusText.textContent = 'Live Production';
+            console.log('✅ Connection status: CONNECTED');
             break;
         case 'connecting':
             statusDot.classList.add('connecting');
             statusText.textContent = 'Connecting...';
+            console.log('⏳ Connection status: CONNECTING');
             break;
         case 'error':
             statusDot.classList.add('error');
             statusText.textContent = 'No Connection';
+            console.log('❌ Connection status: ERROR');
             break;
     }
 }
 
 async function loadInitialData() {
-    console.log('📊 Loading production data...');
+    console.log('📊 Loading initial production data...');
     
     try {
         await loadDashboardData();
         document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        console.log('✅ Initial data loaded successfully');
     } catch (error) {
-        console.error('Failed to load production data:', error);
+        console.error('❌ Failed to load initial data:', error);
+        showEmptyDashboard();
     }
 }
 
 async function loadDashboardData() {
+    console.log('📊 Loading dashboard data...');
+    
     try {
-        // Load REAL sensors with enhanced status checking
+        // Load sensors
         const sensorsResponse = await apiCall('sensors');
         const sensors = sensorsResponse.data || [];
         
-        // Load REAL detections
+        // Load detections
         const detectionsResponse = await apiCall('detections?order=timestamp.desc&limit=10');
         const detections = detectionsResponse.data || [];
         
-        console.log('📊 Production data loaded:', { 
-            sensors: sensors.length, 
-            detections: detections.length 
+        console.log('📈 Data summary:', {
+            sensors: sensors.length,
+            detections: detections.length
         });
         
-        // ✅ ENHANCED: Check sensor online/offline status
-        const sensorsWithStatus = checkSensorStatus(sensors);
-        const activeSensors = sensorsWithStatus.filter(s => s.realTimeStatus === 'online').length;
+        // Calculate metrics
+        const activeSensors = sensors.filter(s => s.status === 'active').length;
         const totalDetections = detections.length;
-        
-        // Calculate metrics only from ONLINE sensors
-        const onlineSensors = sensorsWithStatus.filter(s => s.realTimeStatus === 'online');
         
         const avgConfidence = detections.length > 0 
             ? detections.reduce((sum, d) => sum + (d.confidence || 0), 0) / detections.length
             : 0;
             
-        const avgTemp = onlineSensors.length > 0
-            ? onlineSensors.reduce((sum, s) => sum + (s.temperature || 0), 0) / onlineSensors.length
+        const avgTemp = sensors.length > 0
+            ? sensors.reduce((sum, s) => sum + (s.temperature || 0), 0) / sensors.length
             : 0;
         
         const metrics = {
             total_sensors: sensors.length,
             active_sensors: activeSensors,
-            offline_sensors: sensors.length - activeSensors,
             total_detections: totalDetections,
             avg_confidence: avgConfidence,
             avg_temperature: avgTemp
         };
         
-        // Update UI with REAL data + status
+        // Update UI
         updateDashboardMetrics(metrics);
         updateRecentActivity(detections);
-        updateSensorsDisplay(sensorsWithStatus);
+        updateSensorsDisplay(sensors);
         
-        return { metrics, detections, sensors: sensorsWithStatus };
+        console.log('✅ Dashboard data updated successfully');
+        
     } catch (error) {
-        console.error('Failed to load production dashboard data:', error);
-        updateConnectionStatus('error');
+        console.error('❌ Dashboard data loading failed:', error);
         showEmptyDashboard();
     }
 }
 
-// ✅ NEW FUNCTION: Check if sensors are online/offline
-function checkSensorStatus(sensors) {
-    const currentTime = new Date();
-    
-    return sensors.map(sensor => {
-        const lastUpdate = new Date(sensor.last_update);
-        const timeDifference = currentTime - lastUpdate;
-        
-        // ⚠️ CRITICAL: Sensor offline if no update in 5 minutes
-        if (timeDifference > CONFIG.SENSOR_TIMEOUT) {
-            sensor.realTimeStatus = 'offline';
-            sensor.offlineTime = Math.floor(timeDifference / 60000); // minutes offline
-        } else if (timeDifference > 120000) { // 2 minutes
-            sensor.realTimeStatus = 'warning';
-        } else {
-            sensor.realTimeStatus = 'online';
-        }
-        
-        sensor.lastSeenMinutes = Math.floor(timeDifference / 60000);
-        
-        console.log(`📡 Sensor ${sensor.id}: ${sensor.realTimeStatus} (last seen ${sensor.lastSeenMinutes} min ago)`);
-        
-        return sensor;
-    });
-}
-
 function updateDashboardMetrics(metrics) {
-    document.getElementById('activeSensors').textContent = metrics.active_sensors || 0;
-    document.getElementById('totalSensors').textContent = metrics.total_sensors || 0;
-    document.getElementById('totalDetections').textContent = metrics.total_detections || 0;
+    console.log('📊 Updating dashboard metrics:', metrics);
     
-    // ✅ ENHANCED: Show temperature only from online sensors
-    if (metrics.active_sensors > 0) {
+    try {
+        document.getElementById('activeSensors').textContent = metrics.active_sensors || 0;
+        document.getElementById('totalSensors').textContent = metrics.total_sensors || 0;
+        document.getElementById('totalDetections').textContent = metrics.total_detections || 0;
         document.getElementById('avgConfidence').textContent = 
             metrics.avg_confidence ? `${(metrics.avg_confidence * 100).toFixed(1)}%` : '0%';
         document.getElementById('avgTemp').textContent = 
-            metrics.avg_temperature ? `${metrics.avg_temperature.toFixed(1)}°C` : 'N/A';
-    } else {
-        document.getElementById('avgConfidence').textContent = 'N/A';
-        document.getElementById('avgTemp').textContent = 'N/A';
-    }
-    
-    // ✅ NEW: Show offline sensor count if any
-    if (metrics.offline_sensors > 0) {
-        const activeElement = document.getElementById('activeSensors').parentElement;
-        activeElement.querySelector('.metric-change').innerHTML = 
-            `Total: ${metrics.total_sensors} | <span style="color: #f44336;">Offline: ${metrics.offline_sensors}</span>`;
+            metrics.avg_temperature ? `${metrics.avg_temperature.toFixed(1)}°C` : '0°C';
+        
+        console.log('✅ Metrics updated successfully');
+    } catch (error) {
+        console.error('❌ Failed to update metrics:', error);
     }
 }
 
 function updateRecentActivity(detections) {
     const container = document.getElementById('recentActivity');
+    if (!container) {
+        console.log('❌ Recent activity container not found');
+        return;
+    }
     
     if (!detections || detections.length === 0) {
         container.innerHTML = `
@@ -232,9 +282,11 @@ function updateRecentActivity(detections) {
                 <small>Deploy your sensors with ML model to start monitoring</small>
             </div>
         `;
+        console.log('📊 Showing empty activity state');
         return;
     }
     
+    // Show real detections
     container.innerHTML = detections.slice(0, 5).map(detection => {
         const sensorName = detection.sensors?.name || `Sensor ${detection.sensor_id}`;
         const confidence = detection.confidence * 100;
@@ -256,11 +308,16 @@ function updateRecentActivity(detections) {
             </div>
         `;
     }).join('');
+    
+    console.log(`✅ Updated activity with ${detections.length} detections`);
 }
 
-// ✅ ENHANCED: Show real-time sensor status with offline indicators
 function updateSensorsDisplay(sensors) {
     const container = document.getElementById('sensorsGrid');
+    if (!container) {
+        console.log('❌ Sensors container not found');
+        return;
+    }
     
     if (!sensors || sensors.length === 0) {
         container.innerHTML = `
@@ -269,75 +326,56 @@ function updateSensorsDisplay(sensors) {
                 <small>Deploy ESP32 sensors to start production monitoring</small>
             </div>
         `;
+        console.log('📊 Showing empty sensors state');
         return;
     }
     
-    container.innerHTML = sensors.map(sensor => {
-        // ✅ ENHANCED: Different styling based on real-time status
-        let statusClass = sensor.realTimeStatus;
-        let statusText = sensor.realTimeStatus.toUpperCase();
-        let statusIcon = '';
-        
-        if (sensor.realTimeStatus === 'offline') {
-            statusText = `OFFLINE (${sensor.offlineTime}min ago)`;
-            statusIcon = '❌';
-        } else if (sensor.realTimeStatus === 'warning') {
-            statusText = `SLOW (${sensor.lastSeenMinutes}min ago)`;
-            statusIcon = '⚠️';
-        } else {
-            statusText = `ONLINE (${sensor.lastSeenMinutes}min ago)`;
-            statusIcon = '✅';
-        }
-        
-        return `
-            <div class="sensor-card ${statusClass}">
-                <div class="sensor-header">
-                    <div class="sensor-name">${sensor.name}</div>
-                    <div class="sensor-status ${statusClass}">${statusIcon} ${statusText}</div>
-                </div>
-                <div class="sensor-metrics">
-                    <div class="sensor-metric">
-                        <div class="metric-label">Battery</div>
-                        <div class="metric-number ${sensor.realTimeStatus === 'offline' ? 'offline-data' : ''}">${sensor.battery_level}%</div>
-                    </div>
-                    <div class="sensor-metric">
-                        <div class="metric-label">Detections</div>
-                        <div class="metric-number">${sensor.bee_detections || 0}</div>
-                    </div>
-                    <div class="sensor-metric">
-                        <div class="metric-label">Temperature</div>
-                        <div class="metric-number ${sensor.realTimeStatus === 'offline' ? 'offline-data' : ''}">
-                            ${sensor.temperature?.toFixed(1) || '--'}°C
-                        </div>
-                    </div>
-                    <div class="sensor-metric">
-                        <div class="metric-label">Humidity</div>
-                        <div class="metric-number ${sensor.realTimeStatus === 'offline' ? 'offline-data' : ''}">
-                            ${sensor.humidity?.toFixed(1) || '--'}%
-                        </div>
-                    </div>
-                </div>
-                ${sensor.realTimeStatus === 'offline' ? 
-                    '<div class="offline-warning">⚠️ Sensor disconnected - showing last known values</div>' : 
-                    '<div class="online-indicator">📡 Live data</div>'}
+    // Show real sensors
+    container.innerHTML = sensors.map(sensor => `
+        <div class="sensor-card ${sensor.status}">
+            <div class="sensor-header">
+                <div class="sensor-name">${sensor.name}</div>
+                <div class="sensor-status ${sensor.status}">${sensor.status}</div>
             </div>
-        `;
-    }).join('');
+            <div class="sensor-metrics">
+                <div class="sensor-metric">
+                    <div class="metric-label">Battery</div>
+                    <div class="metric-number">${sensor.battery_level}%</div>
+                </div>
+                <div class="sensor-metric">
+                    <div class="metric-label">Detections</div>
+                    <div class="metric-number">${sensor.bee_detections || 0}</div>
+                </div>
+                <div class="sensor-metric">
+                    <div class="metric-label">Temperature</div>
+                    <div class="metric-number">${sensor.temperature?.toFixed(1) || '--'}°C</div>
+                </div>
+                <div class="sensor-metric">
+                    <div class="metric-label">Humidity</div>
+                    <div class="metric-number">${sensor.humidity?.toFixed(1) || '--'}%</div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    console.log(`✅ Updated sensors display with ${sensors.length} sensors`);
 }
 
 function showEmptyDashboard() {
+    console.log('📊 Showing empty dashboard state');
+    
     document.getElementById('activeSensors').textContent = 0;
     document.getElementById('totalSensors').textContent = 0;
     document.getElementById('totalDetections').textContent = 0;
-    document.getElementById('avgConfidence').textContent = 'N/A';
-    document.getElementById('avgTemp').textContent = 'N/A';
+    document.getElementById('avgConfidence').textContent = '0%';
+    document.getElementById('avgTemp').textContent = '0°C';
     
     updateRecentActivity([]);
     updateSensorsDisplay([]);
 }
 
 async function loadSectionData(sectionName) {
-    console.log(`📄 Loading production data for section: ${sectionName}`);
+    console.log(`📄 Loading section data: ${sectionName}`);
     
     switch (sectionName) {
         case 'dashboard':
@@ -350,36 +388,45 @@ async function loadSectionData(sectionName) {
             await loadDetections();
             break;
         case 'export':
+            console.log('📥 Export section - no data loading needed');
             break;
+        default:
+            console.log(`❓ Unknown section: ${sectionName}`);
     }
 }
 
 async function loadSensors() {
+    console.log('📡 Loading sensors...');
     try {
         const response = await apiCall('sensors');
-        const sensorsWithStatus = checkSensorStatus(response.data);
-        updateSensorsDisplay(sensorsWithStatus);
+        updateSensorsDisplay(response.data);
         return response;
     } catch (error) {
-        console.error('Failed to load production sensors:', error);
+        console.error('❌ Failed to load sensors:', error);
     }
 }
 
 async function loadDetections() {
+    console.log('🐝 Loading detections...');
     try {
         const response = await apiCall('detections?order=timestamp.desc&limit=50');
         updateDetectionsTable(response.data);
         return response;
     } catch (error) {
-        console.error('Failed to load production detections:', error);
+        console.error('❌ Failed to load detections:', error);
     }
 }
 
 function updateDetectionsTable(detections) {
     const tbody = document.getElementById('detectionsBody');
+    if (!tbody) {
+        console.log('❌ Detections table body not found');
+        return;
+    }
     
     if (!detections || detections.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="loading">No real detections yet - Deploy ML model for pollinator detection</td></tr>';
+        console.log('📊 Showing empty detections table');
         return;
     }
     
@@ -400,6 +447,8 @@ function updateDetectionsTable(detections) {
             </tr>
         `;
     }).join('');
+    
+    console.log(`✅ Updated detections table with ${detections.length} records`);
 }
 
 function startAutoUpdate() {
@@ -410,14 +459,13 @@ function startAutoUpdate() {
             try {
                 await loadSectionData(currentSection);
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-                console.log('🔄 Auto-update completed with sensor status check');
             } catch (error) {
-                console.error('Auto-update failed:', error);
+                console.error('❌ Auto-update failed:', error);
             }
         }
     }, CONFIG.UPDATE_INTERVAL);
     
-    console.log(`🔄 Enhanced auto-update started (${CONFIG.UPDATE_INTERVAL/1000}s interval)`);
+    console.log(`🔄 Auto-update started (${CONFIG.UPDATE_INTERVAL/1000}s interval)`);
 }
 
 async function exportData() {
@@ -493,8 +541,8 @@ function downloadFile(content, filename, mimeType) {
     URL.revokeObjectURL(url);
 }
 
+// Initialize connection status
 updateConnectionStatus('connecting');
 
-console.log('🌸 Pollination Monitor - Enhanced Sensor Monitoring Loaded');
-console.log('📊 Real-time sensor status detection active');
-console.log('⚠️ Offline detection: >5 minutes without updates');
+console.log('🌸 Pollination Monitor Production Dashboard - FIXED VERSION Loaded');
+console.log('🔧 Enhanced error handling and debugging enabled');
